@@ -1,9 +1,9 @@
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { ConnectionProvider, WalletProvider, useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { UnsafeBurnerWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
-import React, { FC, ReactNode, useMemo } from 'react';
+import { clusterApiUrl, PublicKey } from '@solana/web3.js';
+import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 
 require('./App.css');
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -54,9 +54,44 @@ const Context: FC<{ children: ReactNode }> = ({ children }) => {
 };
 
 const Content: FC = () => {
+     const { connection } = useConnection();
+console.log("connecton == ", connection);
+     const  {publicKey}  = useWallet();
+     const [balance, setBalance] = useState<string | null>(null);
+     const fetchBalance = async () => {
+console.log("publicKey ----", publicKey);
+           //const publicKey1 = new PublicKey(publicKey.publicKey);
+          if (publicKey) {
+           const balance1 = await connection.getBalance(publicKey);
+//console.log("publicKey1 ----", publicKey1);
+           console.log("balance == "+ balance1);
+}
+         //  setBalance(balance1);
+      };
+
+    useEffect(() => {
+        fetchBalance();
+    }, [connection, publicKey]);
+     const handleShowBalance = async () => {
+       if (!connection) {
+         return;
+       }
+     //  const wallet=useWallet()
+//       const SOLANA_HOST = clusterApiUrl("devnet");
+  //     let lamportBalance;
+    //   if (wallet?.publicKey) {
+         //  const balance = await connection.getBalance(wallet.publicKey);
+        //   lamportBalance=(balance/LAMPORTS_PER_SOL);
+        //   setBalance(lamportBalance);
+    //   }
+    
+     };
+
     return (
         <div className="App">
             <WalletMultiButton />
+            <button onClick={handleShowBalance}>Show Balance</button>
+            {balance != null ? `balance: ${balance}`: 'connecting ...'}
         </div>
     );
 };
