@@ -123,6 +123,8 @@ const Content: FC = () => {
             const signature = await sendTransaction(transaction, connection, {minContextSlot});
             const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
             fetchBalance();
+            console.log(" signature ", signature);
+            setTxnSignature(signature);
         }
     }
 
@@ -171,6 +173,8 @@ console.log("tx, ", tx);
             const signature = await sendTransaction(tx, connection, {minContextSlot});
             const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
             fetchBalance();
+            console.log(" signature ", signature);
+            setTxnSignature(signature);
     }
 
     useEffect(() => {
