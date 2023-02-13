@@ -5,7 +5,7 @@ import { ConnectionProvider, WalletProvider, useConnection, useWallet } from '@s
 import { WalletModalProvider, WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui';
 import { UnsafeBurnerWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Connection, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import {getAssociatedTokenAddress, getAccount} from '@solana/spl-token';
+import {getAssociatedTokenAddress, createTransferCheckedInstruction, getAccount, getMint} from '@solana/spl-token';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import {Buffer} from 'buffer';
 require('./App.css');
@@ -66,27 +66,27 @@ const Content: FC = () => {
      const [usdcBalance, setUsdcBalance] = useState(0);
      const [solAddr, setSolAddr] = useState('0x');
      const [solAmount, setSolAmount] = useState(0);
+     const [payeeUsdcAddr, setPayeeUsdcAddr] = useState('0x');
+     const [payeeUsdcAmount, setPayeeUsdcAmount] = useState(0);
      const [hash, setHash] = useState('0x');
      const [txnSignature, setTxnSignature] = useState('0x');
      const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; 
+     const usdcMintKey = new PublicKey(USDC_MINT);
+   
      const fetchBalance = async () => {
           console.log("publicKey ----", publicKey);
           //const publicKey1 = new PublicKey(publicKey.publicKey);
           if (publicKey) {
+             const ata = await getAssociatedTokenAddress(usdcMintKey, publicKey);
+             let accountData = await getAccount(connection, ata, "confirmed");
              const balance1 = await connection.getBalance(publicKey);
              //console.log("publicKey1 ----", publicKey1);
              const lamportBalance=(balance1/LAMPORTS_PER_SOL);
              setBalance(lamportBalance);
-             const usdcMintKey = new PublicKey(USDC_MINT);
-             const ata = await getAssociatedTokenAddress(usdcMintKey, publicKey);
-             let accountData = await getAccount(connection, ata, "confirmed");
              console.log("account data ", Number(accountData.amount)/ 10**6);
              const usdcAmount = (Number(accountData.amount)/ 10**6).toFixed(2);
-console.log("usdc ", usdcAmount);
+             console.log("usdc ", usdcAmount);
              setUsdcBalance(parseFloat(usdcAmount));
-  //          const usdcContractKey = new PublicKey(usdcContractAddr);
-    //        const usdcBal = await connection.request('getBalance', usdcContractKey, publicKey);
-      //       setUsdcBalance(usdcBal);
              console.log("balance == "+ balance1);
          } else {
              setBalance(0);
@@ -97,8 +97,6 @@ console.log("usdc ", usdcAmount);
      const sendSol = async () => {
 
         if (!publicKey) throw new WalletNotConnectedError();
-//
-//
         const {
             context: { slot: minContextSlot },
             value: { blockhash, lastValidBlockHeight }
@@ -109,18 +107,9 @@ console.log("usdc ", usdcAmount);
         console.log("lamports = ", lamports);
 
         if (publicKey) {
-       //     const fromPublicKeyPr = Keypair.fromPublicKey(Buffer.from(publicKey), 'hex');
             const fromPublicKey = new PublicKey(publicKey);
             const toPublicKey = new PublicKey(solAddr);
             const k1 = Keypair.generate();
-            console.log("Keypair ", Keypair);
-            console.log("Buffer ", Buffer);
-            console.log("publickey ", publicKey);
-            console.log("k1 public key ", k1.publicKey);
-            console.log("k1 ", k1);
-            //console.log("from public key ", fromPublicKey);
-            console.log("from public key ", fromPublicKey);
-            console.log("to public key ", toPublicKey);
       	    let transaction = new Transaction();
             transaction.add(
               SystemProgram.transfer({
@@ -132,20 +121,58 @@ console.log("usdc ", usdcAmount);
             const signature = await sendTransaction(transaction, connection, {minContextSlot});
             const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
             fetchBalance();
-            const transactionInfo = await connection.getTransaction(signature);
-setTxnSignature(signature);
-console.log("signature, ", signature);
-console.log("signature result, ", signatureResult);
-console.log("transaction, ", transactionInfo?.transaction ||  ' ');
-console.log("transaction whole, ", transactionInfo ? transactionInfo : '0x' );
-
-  //          if (transactionInfo) {
-//console.log("transaction, ", transactionInfo.transactionHash);
-           //     const txnHash = transactionInfo.transactionHash;
-             //   setHash(txnHash);     
-    //        } 
-          //  await sendAndConfirmTransaction(connection, transaction,[ fromPublicKeyPr]); 
         }
+    }
+
+
+     const sendUsdc = async () => {
+
+        if (!publicKey) throw new WalletNotConnectedError();
+             const ata = await getAssociatedTokenAddress(usdcMintKey, publicKey);
+             let accountData = await getAccount(connection, ata, "confirmed");
+  //      const {
+    //        context: { slot: minContextSlot },
+      //      value: { blockhash, lastValidBlockHeight }
+     //   } = await connection.getLatestBlockhashAndContext();
+
+        const usdcMint = await getMint(connection, usdcMintKey);
+        const payeePublicKey = new PublicKey(payeeUsdcAddr);
+        const payerUsdcAddress = await getAssociatedTokenAddress(usdcMintKey, publicKey);
+        const payeeUsdcAddress = await getAssociatedTokenAddress(usdcMintKey, payeePublicKey);
+        const { blockhash } = await connection.getLatestBlockhash("finalized");
+        const bigAmount = Number(payeeUsdcAmount);
+        const transferInstruction = createTransferCheckedInstruction(
+      payerUsdcAddress,
+      usdcMintKey,    // This is the address of the token we want to transfer
+      payeeUsdcAddress,
+      publicKey,
+      bigAmount * 10 ** (await usdcMint).decimals,
+      usdcMint.decimals // The token could have any number of decimals
+    );
+
+    const tx = new Transaction({
+      recentBlockhash: blockhash,
+      feePayer: publicKey,
+    })
+
+   // const orderID = "1";
+  //  transferInstruction.keys.push({
+  //    pubkey: new PublicKey(orderID),
+  //    isSigner: false,
+  //    isWritable: false,
+  //  });
+
+    tx.add(transferInstruction);
+console.log("tx, ", tx);
+   const serializedTransaction = tx.serialize({
+      requireAllSignatures: false,
+    });
+
+    const base64 = serializedTransaction.toString("base64");
+
+//            const signature = await sendTransaction(transaction, connection, {minContextSlot});
+  //          const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+    //        fetchBalance();
     }
 
     useEffect(() => {
@@ -201,6 +228,18 @@ console.log("transaction whole, ", transactionInfo ? transactionInfo : '0x' );
                    </Col>
                    <Col xs={3}>
                        <input placeholder="wallet address" onChange={(e)=>setSolAddr(e.target.value)} />
+                   </Col>
+                   <Col xs={3} className="text-light">eg 4dGDp3BuTaXiqJwwJhh9abUBBm6hMhRkidttr5N4Cemm</Col>
+               </Row>
+               <Row>
+                   <Col xs={3}>
+                       <Button variant="primary" onClick={sendUsdc}>Send Usdc</Button>
+                   </Col>
+                   <Col xs={3}>
+                       <input placeholder="usdc Amount" onChange={(e)=>setPayeeUsdcAmount(parseFloat(e.target.value))} />
+                   </Col>
+                   <Col xs={3}>
+                       <input placeholder="wallet address" onChange={(e)=>setPayeeUsdcAddr(e.target.value)} />
                    </Col>
                    <Col xs={3} className="text-light">eg 4dGDp3BuTaXiqJwwJhh9abUBBm6hMhRkidttr5N4Cemm</Col>
                </Row>
