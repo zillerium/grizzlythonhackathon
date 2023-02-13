@@ -85,9 +85,10 @@ const Content: FC = () => {
              const lamportBalance=(balance1/LAMPORTS_PER_SOL);
              setBalance(lamportBalance);
              console.log("account data ", Number(accountData.amount)/ 10**6);
-             const usdcAmount = (Number(accountData.amount)/ 10**6).toFixed(2);
+             const usdcAmount = (Number(accountData.amount)/ 10**6);
+             //const usdcAmount = parseFloat(parseFloat(accountData.amount)/ 10**6);
              console.log("usdc ", usdcAmount);
-             setUsdcBalance(parseFloat(usdcAmount));
+             setUsdcBalance(usdcAmount);
              console.log("balance == "+ balance1);
          } else {
              setBalance(0);
@@ -169,7 +170,7 @@ console.log("tx, ", tx);
 
             const signature = await sendTransaction(tx, connection, {minContextSlot});
             const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
-    //        fetchBalance();
+            fetchBalance();
     }
 
     useEffect(() => {
@@ -214,7 +215,7 @@ console.log("tx, ", tx);
                <Row>
                    <Col xs={4}>
                    </Col>
-                   <Col xs={4} className="text-light">{usdcBalance != null ? `USDC Balance: ${usdcBalance.toFixed(2)}`: 'connecting ...'}</Col>
+                   <Col xs={4} className="text-light">{usdcBalance != null ? `USDC Balance: ${usdcBalance}`: 'connecting ...'}</Col>
                </Row>
                <Row>
                    <Col xs={3}>
