@@ -2,8 +2,8 @@
 import { WalletAdapterNetwork, WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { Button, Container, Row, Col} from 'react-bootstrap';
 import { ConnectionProvider, WalletProvider, useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { UnsafeBurnerWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletModalProvider, WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui';
+import { UnsafeBurnerWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Connection, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import {Buffer} from 'buffer';
@@ -40,6 +40,7 @@ const Context: FC<{ children: ReactNode }> = ({ children }) => {
              * instantiate its legacy wallet adapter here. Common legacy adapters can be found
              * in the npm package `@solana/wallet-adapter-wallets`.
              */
+            new PhantomWalletAdapter(),
             new UnsafeBurnerWalletAdapter(),
         ],
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,9 +76,9 @@ const Content: FC = () => {
              //console.log("publicKey1 ----", publicKey1);
              const lamportBalance=(balance1/LAMPORTS_PER_SOL);
              setBalance(lamportBalance);
-            const usdcContractKey = new PublicKey(usdcContractAddr);
-            const usdcBal = await connection.request('getBalance', usdcContractKey, publicKey);
-             setUsdcBalance(usdcBal);
+  //          const usdcContractKey = new PublicKey(usdcContractAddr);
+    //        const usdcBal = await connection.request('getBalance', usdcContractKey, publicKey);
+      //       setUsdcBalance(usdcBal);
              console.log("balance == "+ balance1);
          } else {
              setBalance(0);
@@ -88,7 +89,8 @@ const Content: FC = () => {
      const sendSol = async () => {
 
         if (!publicKey) throw new WalletNotConnectedError();
-
+//
+//
         const {
             context: { slot: minContextSlot },
             value: { blockhash, lastValidBlockHeight }
@@ -166,7 +168,8 @@ console.log("transaction whole, ", transactionInfo ? transactionInfo : '0x' );
                </Row>
                <Row>
                    <Col xs={6}>
-                       <WalletMultiButton />
+                       
+                    <WalletMultiButton />
                    </Col>
                </Row>
                <Row>
