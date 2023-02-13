@@ -5,6 +5,7 @@ import { ConnectionProvider, WalletProvider, useConnection, useWallet } from '@s
 import { WalletModalProvider, WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui';
 import { UnsafeBurnerWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Connection, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import {getAssociatedTokenAddress, getAccount} from '@solana/spl-token';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import {Buffer} from 'buffer';
 require('./App.css');
@@ -67,7 +68,7 @@ const Content: FC = () => {
      const [solAmount, setSolAmount] = useState(0);
      const [hash, setHash] = useState('0x');
      const [txnSignature, setTxnSignature] = useState('0x');
-     const usdcContractAddr = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; 
+     const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; 
      const fetchBalance = async () => {
           console.log("publicKey ----", publicKey);
           //const publicKey1 = new PublicKey(publicKey.publicKey);
@@ -76,6 +77,13 @@ const Content: FC = () => {
              //console.log("publicKey1 ----", publicKey1);
              const lamportBalance=(balance1/LAMPORTS_PER_SOL);
              setBalance(lamportBalance);
+             const usdcMintKey = new PublicKey(USDC_MINT);
+             const ata = await getAssociatedTokenAddress(usdcMintKey, publicKey);
+             let accountData = await getAccount(connection, ata, "confirmed");
+             console.log("account data ", Number(accountData.amount)/ 10**6);
+             const usdcAmount = (Number(accountData.amount)/ 10**6).toFixed(2);
+console.log("usdc ", usdcAmount);
+             setUsdcBalance(parseFloat(usdcAmount));
   //          const usdcContractKey = new PublicKey(usdcContractAddr);
     //        const usdcBal = await connection.request('getBalance', usdcContractKey, publicKey);
       //       setUsdcBalance(usdcBal);
@@ -182,7 +190,7 @@ console.log("transaction whole, ", transactionInfo ? transactionInfo : '0x' );
                <Row>
                    <Col xs={4}>
                    </Col>
-                   <Col xs={4} className="text-light">{balance != null ? `USDC Balance: ${usdcBalance}`: 'connecting ...'}</Col>
+                   <Col xs={4} className="text-light">{usdcBalance != null ? `USDC Balance: ${usdcBalance.toFixed(2)}`: 'connecting ...'}</Col>
                </Row>
                <Row>
                    <Col xs={3}>
