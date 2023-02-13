@@ -61,9 +61,12 @@ const Content: FC = () => {
      console.log("connecton == ", connection);
      const  {publicKey, sendTransaction}  = useWallet();
      const [balance, setBalance] = useState(0);
+     const [usdcBalance, setUsdcBalance] = useState(0);
      const [solAddr, setSolAddr] = useState('0x');
      const [solAmount, setSolAmount] = useState(0);
-     
+     const [hash, setHash] = useState('0x');
+     const [txnSignature, setTxnSignature] = useState('0x');
+     const usdcContractAddr = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; 
      const fetchBalance = async () => {
           console.log("publicKey ----", publicKey);
           //const publicKey1 = new PublicKey(publicKey.publicKey);
@@ -72,7 +75,9 @@ const Content: FC = () => {
              //console.log("publicKey1 ----", publicKey1);
              const lamportBalance=(balance1/LAMPORTS_PER_SOL);
              setBalance(lamportBalance);
-             setBalance(lamportBalance);
+            const usdcContractKey = new PublicKey(usdcContractAddr);
+            const usdcBal = await connection.request('getBalance', usdcContractKey, publicKey);
+             setUsdcBalance(usdcBal);
              console.log("balance == "+ balance1);
          } else {
              setBalance(0);
@@ -115,7 +120,20 @@ const Content: FC = () => {
 	      }),
 	    );
             const signature = await sendTransaction(transaction, connection, {minContextSlot});
-            await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+            const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+            fetchBalance();
+            const transactionInfo = await connection.getTransaction(signature);
+setTxnSignature(signature);
+console.log("signature, ", signature);
+console.log("signature result, ", signatureResult);
+console.log("transaction, ", transactionInfo?.transaction ||  ' ');
+console.log("transaction whole, ", transactionInfo ? transactionInfo : '0x' );
+
+  //          if (transactionInfo) {
+//console.log("transaction, ", transactionInfo.transactionHash);
+           //     const txnHash = transactionInfo.transactionHash;
+             //   setHash(txnHash);     
+    //        } 
           //  await sendAndConfirmTransaction(connection, transaction,[ fromPublicKeyPr]); 
         }
     }
@@ -153,10 +171,15 @@ const Content: FC = () => {
                </Row>
                <Row>
                    <Col xs={4}>
-                       <Button variant="primary" onClick={handleShowBalance}>Show Wallet Sol Balance</Button>
+                       <Button variant="primary" onClick={handleShowBalance}>Show Balances</Button>
                    </Col>
                    <Col xs={4} className="text-light">{balance != null ? `Sol Balance: ${balance}`: 'connecting ...'}</Col>
                    <Col xs={4} className="text-light">{balance != null ? `Lamports Per Sol: ${LAMPORTS_PER_SOL}`: 'connecting ...'}</Col>
+               </Row>
+               <Row>
+                   <Col xs={4}>
+                   </Col>
+                   <Col xs={4} className="text-light">{balance != null ? `USDC Balance: ${usdcBalance}`: 'connecting ...'}</Col>
                </Row>
                <Row>
                    <Col xs={3}>
@@ -169,6 +192,14 @@ const Content: FC = () => {
                        <input placeholder="wallet address" onChange={(e)=>setSolAddr(e.target.value)} />
                    </Col>
                    <Col xs={3} className="text-light">eg 4dGDp3BuTaXiqJwwJhh9abUBBm6hMhRkidttr5N4Cemm</Col>
+               </Row>
+               <Row>
+                  <Col xs={6} className="text-light">{txnSignature && (
+                    <a href={`https://explorer.solana.com/tx/${txnSignature}?cluster=devnet`} target="_blank">
+                    {txnSignature}
+                    </a>
+                    )}
+                   </Col>
                </Row>
             </Container>       
         </div>
