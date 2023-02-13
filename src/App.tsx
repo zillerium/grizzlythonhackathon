@@ -130,23 +130,24 @@ const Content: FC = () => {
         if (!publicKey) throw new WalletNotConnectedError();
              const ata = await getAssociatedTokenAddress(usdcMintKey, publicKey);
              let accountData = await getAccount(connection, ata, "confirmed");
-  //      const {
-    //        context: { slot: minContextSlot },
-      //      value: { blockhash, lastValidBlockHeight }
-     //   } = await connection.getLatestBlockhashAndContext();
+        const {
+           context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
 
         const usdcMint = await getMint(connection, usdcMintKey);
         const payeePublicKey = new PublicKey(payeeUsdcAddr);
         const payerUsdcAddress = await getAssociatedTokenAddress(usdcMintKey, publicKey);
         const payeeUsdcAddress = await getAssociatedTokenAddress(usdcMintKey, payeePublicKey);
-        const { blockhash } = await connection.getLatestBlockhash("finalized");
+     //   const { blockhash } = await connection.getLatestBlockhash("finalized");
         const bigAmount = Number(payeeUsdcAmount);
         const transferInstruction = createTransferCheckedInstruction(
       payerUsdcAddress,
       usdcMintKey,    // This is the address of the token we want to transfer
       payeeUsdcAddress,
       publicKey,
-      bigAmount * 10 ** (await usdcMint).decimals,
+      //bigAmount * 10 ** (await usdcMint).decimals,
+      bigAmount ,
       usdcMint.decimals // The token could have any number of decimals
     );
 
@@ -164,14 +165,9 @@ const Content: FC = () => {
 
     tx.add(transferInstruction);
 console.log("tx, ", tx);
-   const serializedTransaction = tx.serialize({
-      requireAllSignatures: false,
-    });
 
-    const base64 = serializedTransaction.toString("base64");
-
-//            const signature = await sendTransaction(transaction, connection, {minContextSlot});
-  //          const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+            const signature = await sendTransaction(tx, connection, {minContextSlot});
+            const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
     //        fetchBalance();
     }
 
