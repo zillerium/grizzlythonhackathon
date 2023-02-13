@@ -73,6 +73,7 @@ const Content: FC = () => {
      const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"; 
      const usdcMintKey = new PublicKey(USDC_MINT);
    
+   
      const fetchBalance = async () => {
           console.log("publicKey ----", publicKey);
           //const publicKey1 = new PublicKey(publicKey.publicKey);
