@@ -4,7 +4,7 @@ import { Button, Container, Row, Col} from 'react-bootstrap';
 import { ConnectionProvider, WalletProvider, useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletModalProvider, WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui';
 import { UnsafeBurnerWalletAdapter, PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { Connection, Keypair, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, Keypair, TransactionInstruction, SystemProgram, Transaction, sendAndConfirmTransaction, clusterApiUrl, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import {getAssociatedTokenAddress, createTransferCheckedInstruction, getAccount, getMint} from '@solana/spl-token';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import {Buffer} from 'buffer';
@@ -177,6 +177,39 @@ console.log("tx, ", tx);
             setTxnSignature(signature);
     }
 
+     const sayhello = async () => {
+
+        if (!publicKey) throw new WalletNotConnectedError();
+
+             const programId = new PublicKey('49cgmZa5g2kc7J4yFSEiboakBoajvD2dEUqABPygzGoh'); //hello world
+        const {
+           context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
+
+    const tx = new Transaction({
+      recentBlockhash: blockhash,
+      feePayer: publicKey,
+    })
+      tx.add(
+         new TransactionInstruction({
+        programId,
+        keys: [
+          {pubkey: publicKey, isSigner: false, isWritable: true},
+          // add any additional keys here
+        ],
+        data: Buffer.from([]),
+      })
+    );
+
+     console.log("tx, ", tx);
+
+            const signature = await sendTransaction(tx, connection, {minContextSlot});
+            const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+            console.log(" signature ", signature);
+            setTxnSignature(signature);
+    }
+
     useEffect(() => {
         fetchBalance();
     }, [connection, publicKey]);
@@ -251,6 +284,11 @@ console.log("tx, ", tx);
                     {txnSignature}
                     </a>
                     )}
+                   </Col>
+               </Row>
+               <Row>
+                  <Col xs={6} >
+                       <Button variant="primary" onClick={sayhello}> say hello</Button>
                    </Col>
                </Row>
             </Container>       
