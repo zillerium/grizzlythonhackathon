@@ -8,6 +8,8 @@ import { Connection, Keypair, TransactionInstruction, SystemProgram, Transaction
 import {getAssociatedTokenAddress, createTransferCheckedInstruction, getAccount, getMint} from '@solana/spl-token';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
 import {Buffer} from 'buffer';
+import BN from 'bn.js';
+import * as borsh from 'borsh';
 require('./App.css');
 require('@solana/wallet-adapter-react-ui/styles.css');
 window.Buffer = Buffer;
@@ -55,6 +57,41 @@ const Context: FC<{ children: ReactNode }> = ({ children }) => {
             </WalletProvider>
         </ConnectionProvider>
     );
+};
+
+interface MyInstructionType {
+  //discriminator: number;
+ // amount: number;
+  [key: string]: number | bigint | BN;
+  
+}
+
+class MyInstruction {
+  [key: string]: number | bigint | BN;
+  constructor(obj: MyInstructionType) {
+    for (const key in obj) {
+      this[key] = obj[key];
+    }
+  }
+}
+
+const MyInstructionSchema = new Map([
+  [
+    MyInstruction,
+    {
+      kind: "struct",
+      fields: [
+        ["discriminator", "u8"],
+        ["amount", "u64"],
+      ],
+    },
+  ],
+]);
+
+const encodeIxData = (ix: MyInstructionType = {}) => {
+  return Buffer.from(
+    borsh.serialize(MyInstructionSchema, new MyInstruction(ix))
+  );
 };
 
 const Content: FC = () => {
@@ -177,11 +214,63 @@ console.log("tx, ", tx);
             setTxnSignature(signature);
     }
 
+ const transferSol = async () => {
+
+        if (!publicKey) throw new WalletNotConnectedError();
+
+             const programId = new PublicKey('7XyzLTMw7nBzoZnYoxauCzv11ruJee3HqjbxCyDfYb52'); //transfer sol
+        const {
+           context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
+
+        const fromPublicKey = new PublicKey(publicKey);
+            const toPublicKey = new PublicKey(solAddr);
+
+    const amount = new BN(solAmount * LAMPORTS_PER_SOL);
+    const tx = new Transaction({
+      recentBlockhash: blockhash,
+      feePayer: publicKey,
+    })
+ //const blockhashInfo = await connection.getLatestBlockhash();
+// const tx = new Transaction({
+//     ...blockhashInfo, feePayer: publicKey,
+// });  
+
+console.log("from pub key ", fromPublicKey.toString());
+console.log("from pub key ", publicKey.toString());
+console.log("to pub key ", toPublicKey.toString());
+console.log("system programid ", SystemProgram.programId.toString());
+
+      const transactionInstruction = 
+         new TransactionInstruction({
+        programId,
+        keys: [
+          {pubkey: publicKey, isSigner: false, isWritable: true},
+          {pubkey: toPublicKey, isSigner: false, isWritable: true},
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: true},
+          // add any additional keys here
+        ],
+        data: encodeIxData({ discriminator: 0, amount }), 
+      }); 
+
+      tx.add(transactionInstruction);
+      const simResult = await connection.simulateTransaction(tx);
+      console.log(simResult);     
+console.log("tx === ", tx);
+            const signature = await sendTransaction(tx, connection, {minContextSlot});
+            const signatureResult = await connection.confirmTransaction({blockhash, lastValidBlockHeight, signature});
+            console.log(" signature ", signature);
+            setTxnSignature(signature);
+}
+
+
+
      const sayhello = async () => {
 
         if (!publicKey) throw new WalletNotConnectedError();
 
-             const programId = new PublicKey('49cgmZa5g2kc7J4yFSEiboakBoajvD2dEUqABPygzGoh'); //hello world
+             const programId = new PublicKey('CUgnHsgaoxjjzzxRvuTTanZrYrLkMKd3YHWox7dXCVtM'); //hello world
         const {
            context: { slot: minContextSlot },
             value: { blockhash, lastValidBlockHeight }
@@ -288,7 +377,14 @@ console.log("tx, ", tx);
                </Row>
                <Row>
                   <Col xs={6} >
-                       <Button variant="primary" onClick={sayhello}> say hello</Button>
+<p>CUgnHsgaoxjjzzxRvuTTanZrYrLkMKd3YHWox7dXCVtM</p>
+                       <Button variant="primary" onClick={sayhello}> say hello - CUgnHsgaoxjjzzxRvuTTanZrYrLkMKd3YHWox7dXCVtM</Button>
+                   </Col>
+               </Row>
+               <Row>
+                  <Col xs={6} >
+<p>BQUQkVyEduQDViakCN6Gdy3UE2x4gFM753ZwFDZfRGm</p>
+                       <Button variant="primary" onClick={transferSol}> transfer sol BQUQkVyEduQDViakCN6Gdy3UE2x4gFM753ZwFDZfRGm</Button>
                    </Col>
                </Row>
             </Container>       
